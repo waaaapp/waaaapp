@@ -83,7 +83,7 @@ function createWebviewElement(tab) {
   const webviewEl = document.createElement('webview');
   webviewEl.dataset.tabId = tab.id;
   if (tab.isHelp) {
-    webviewEl.src = 'help.html';
+    webviewEl.src = 'https://waaaapp.com/apphelp.html';
   } else {
     webviewEl.partition = `persist:whatsapp_tab_${tab.id}`;
     webviewEl.src = 'https://web.whatsapp.com';
