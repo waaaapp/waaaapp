@@ -2,6 +2,8 @@ const tabsContainer = document.getElementById('tabs-container');
 const webviewContainer = document.getElementById('webview-container');
 const addTabBtn = document.getElementById('add-tab-btn');
 const renameTabBtn = document.getElementById('rename-tab-btn');
+const exportBtn = document.getElementById('export-btn');
+const importBtn = document.getElementById('import-btn');
 const exitBtn = document.getElementById('exit-btn');
 const helpBtn = document.getElementById('help-btn');
 
@@ -182,6 +184,14 @@ renameTabBtn.addEventListener('click', () => {
     if(activeTabId) {
         renameTab(activeTabId)
     }
+});
+exportBtn.addEventListener('click', async () => {
+    const result = await window.electronAPI.exportProfile();
+    alert(result.message);
+});
+importBtn.addEventListener('click', async () => {
+    const result = await window.electronAPI.importProfile();
+    alert(result.message);
 });
 exitBtn.addEventListener('click', () => window.electronAPI.exitApp());
 
