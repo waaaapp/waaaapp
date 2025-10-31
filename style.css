@@ -20,6 +20,8 @@ body, html {
 }
 
 .tab {
+  display: flex;
+  align-items: center;
   padding: 10px 15px;
   background-color: #ddd;
   border: 1px solid #ccc;
@@ -27,6 +29,20 @@ body, html {
   cursor: pointer;
   margin-right: 5px;
   border-radius: 5px 5px 0 0;
+}
+
+.tab-name {
+  flex-grow: 1;
+}
+
+.close-tab {
+  margin-left: 10px;
+  padding: 2px 5px;
+  border-radius: 3px;
+}
+
+.close-tab:hover {
+  background-color: #ccc;
 }
 
 .tab.active {
@@ -48,10 +64,40 @@ body, html {
   border-right: 1px solid #ccc;
 }
 
+#top-buttons {
+  display: flex;
+  flex-direction: column;
+}
+
+#bottom-buttons {
+  display: flex;
+  flex-direction: column;
+  margin-top: auto;
+}
+
+.separator {
+  border: none;
+  border-top: 1px solid #ccc;
+  margin: 10px 0;
+}
+
 #button-bar button {
-  margin-bottom: 10px;
-  padding: 10px;
-  width: 100px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  margin: 4px 0;
+  width: auto;
+}
+
+#button-bar button svg {
+  width: 24px;
+  height: 24px;
+  stroke: #333;
+}
+
+#button-bar button:hover svg {
+  stroke: #000;
 }
 
 #webview-container {

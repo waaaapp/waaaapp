@@ -15,12 +15,17 @@ async function initializeApp() {
         store.set(key, value);
     });
 
+    ipcMain.on('exit-app', () => {
+        app.quit();
+    });
+
     function createWindow () {
       const win = new BrowserWindow({
         width: 1200,
         height: 800,
         autoHideMenuBar: true,
-        frame: false,
+        frame: true,
+        icon: path.join(__dirname, 'icon.svg'),
         webPreferences: {
           preload: path.join(__dirname, 'preload.js'),
           webviewTag: true,
