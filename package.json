@@ -4,15 +4,36 @@
   "description": "A multi-tabbed WhatsApp client",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "build": "electron-builder --win --x64"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "electron": "^39.0.0"
+    "electron": "^39.0.0",
+    "electron-builder": "^24.13.3"
   },
   "dependencies": {
     "electron-store": "^11.0.2"
+  },
+  "build": {
+    "appId": "com.waaaapp.app",
+    "productName": "waaaapp",
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "target": "dir",
+      "icon": "icon.ico"
+    },
+    "files": [
+      "**/*",
+      "!node_modules/*/{CHANGELOG.md,README.md,README,.github,CONTRIBUTING.md,docs,test,tests,powered-test,example,examples,*.d.ts}",
+      "!node_modules/.bin",
+      "!**/*.{iml,o,hprof,orig,pyc,pyo,rbc,swp,csproj,fsproj,vbproj,resharper,idea,sln,suo,xproj}",
+      "!**/._*",
+      "!**/{.DS_Store,.git,.hg,.svn,CVS,RCS,SCCS,.arch-ids,.bzr,.fslckout,.gitattributes,.gitignore,.hgignore,.hgsigs,.npmignore,.cvsignore,.gitignore,.gitkeep,.project,.settings,.vs,npm-debug.log,yarn.lock,.editorconfig,.jshintrc,.prettierrc,.prettierignore,.travis.yml,appveyor.yml,.gitlab-ci.yml,package-lock.json}"
+    ]
   }
 }
