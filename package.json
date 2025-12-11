@@ -12,7 +12,9 @@
   "license": "ISC",
   "devDependencies": {
     "electron": "^39.0.0",
-    "electron-builder": "^24.13.3"
+    "electron-builder": "^24.13.3",
+    "png2icons": "^2.0.1",
+    "sharp": "^0.34.5"
   },
   "dependencies": {
     "adm-zip": "^0.5.16",
@@ -27,6 +29,12 @@
     "win": {
       "target": "dir",
       "icon": "icon.ico"
+    },
+    "mac": {
+      "icon": "icon.icns"
+    },
+    "linux": {
+      "icon": "icon.png"
     },
     "files": [
       "**/*",

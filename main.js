@@ -111,7 +111,15 @@ async function initializeApp() {
         height: 800,
         autoHideMenuBar: true,
         frame: true,
-        icon: path.join(__dirname, 'icon.svg'),
+        // Use platform-specific icon formats; Windows ignores SVG, macOS prefers ICNS
+        icon: path.join(
+          __dirname,
+          process.platform === 'win32'
+            ? 'icon.ico'
+            : process.platform === 'darwin'
+              ? 'icon.icns'
+              : 'icon.png'
+        ),
         webPreferences: {
           preload: path.join(__dirname, 'preload.js'),
           webviewTag: true,
