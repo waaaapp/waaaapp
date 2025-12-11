@@ -1,5 +1,7 @@
 # waaaapp
 
+[![Build and Release](https://github.com/jangi/whatsaaapp/actions/workflows/release.yml/badge.svg?branch=prod)](https://github.com/jangi/whatsaaapp/actions/workflows/release.yml)
+
 A multi-tabbed WhatsApp client for managing multiple accounts.
 
 ## Why was this made?
@@ -9,6 +11,15 @@ This application was born out of the need to manage multiple WhatsApp accounts f
 ## What it does
 
 `waaaapp` allows you to run multiple WhatsApp Web instances in a single, tabbed window. Each tab is a separate session, allowing you to stay logged in to multiple accounts simultaneously.
+
+## Features
+
+- Multiple tabs, each with its own persistent WhatsApp Web session (independent profiles).
+- Inline tab rename (double-click a tab or use the rename button).
+- Profile export/import to `.waaaapp` archives (config + all tab sessions).
+- Help tab built in for quick reference.
+- Platform-ready icons: ICO (Windows), ICNS (macOS), PNG (Linux).
+- Packaged builds: Windows portable, macOS DMG, Linux AppImage (via GitHub Actions).
 
 ## Disclaimer
 
