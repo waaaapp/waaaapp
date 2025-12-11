@@ -1,8 +1,7 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const zlib = require('zlib');
-const { execSync } = require('child_process');
+const AdmZip = require('adm-zip');
 
 let store;
 
@@ -22,13 +21,6 @@ async function initializeApp() {
         app.quit();
     });
 
-    const ZIP_COMMAND = process.platform === 'win32'
-        ? 'Add-Type -AssemblyName System.IO.Compression.FileSystem; [System.IO.Compression.ZipFile]::CreateFromDirectory("$inputPath", "$outputPath", "Optimal", $false)'
-        : 'zip -r $outputPath $inputPath';
-    const UNZIP_COMMAND = process.platform === 'win32'
-        ? 'Add-Type -AssemblyName System.IO.Compression.FileSystem; [System.IO.Compression.ZipFile]::ExtractToDirectory("$inputPath", "$outputPath", $true)'
-        : 'unzip -o $inputPath -d $outputPath';
-
     ipcMain.handle('export-profile', async () => {
         const { filePath } = await dialog.showSaveDialog({
             title: 'Export Profile',
@@ -39,32 +31,19 @@ async function initializeApp() {
         if (filePath) {
             try {
                 const userDataPath = app.getPath('userData');
-                const storePath = path.dirname(store.path);
+                const zip = new AdmZip();
 
-                const tempDir = path.join(userDataPath, 'temp_export');
-                if (fs.existsSync(tempDir)) {
-                    fs.rmSync(tempDir, { recursive: true, force: true });
-                }
-                fs.mkdirSync(tempDir);
+                // Include the config/store file at the archive root
+                zip.addLocalFile(store.path, '', path.basename(store.path));
 
-                fs.copyFileSync(store.path, path.join(tempDir, path.basename(store.path)));
-                
+                // Include all persisted tab partitions
                 const persistDirs = fs.readdirSync(userDataPath).filter(name => name.startsWith('persist_whatsapp_tab_'));
                 persistDirs.forEach(dir => {
                     const src = path.join(userDataPath, dir);
-                    const dest = path.join(tempDir, dir);
-                    fs.cpSync(src, dest, { recursive: true });
+                    zip.addLocalFolder(src, dir);
                 });
 
-                const inputPath = tempDir;
-                const outputPath = filePath;
-                
-                const command = ZIP_COMMAND
-                    .replace('$inputPath', inputPath)
-                    .replace('$outputPath', outputPath);
-                execSync(command, { stdio: 'pipe' });
-
-                fs.rmSync(tempDir, { recursive: true, force: true });
+                zip.writeZip(filePath);
 
                 return { success: true, message: 'Profile exported successfully.' };
             } catch (error) {
@@ -86,20 +65,15 @@ async function initializeApp() {
             try {
                 const importFilePath = filePaths[0];
                 const userDataPath = app.getPath('userData');
-
                 const tempDir = path.join(userDataPath, 'temp_import');
+
                 if (fs.existsSync(tempDir)) {
                     fs.rmSync(tempDir, { recursive: true, force: true });
                 }
                 fs.mkdirSync(tempDir);
-                
-                const inputPath = importFilePath;
-                const outputPath = tempDir;
 
-                const command = UNZIP_COMMAND
-                    .replace('$inputPath', inputPath)
-                    .replace('$outputPath', outputPath);
-                execSync(command, { stdio: 'pipe' });
+                const zip = new AdmZip(importFilePath);
+                zip.extractAllTo(tempDir, true);
 
                 const extractedConfigPath = path.join(tempDir, path.basename(store.path));
                 if (fs.existsSync(extractedConfigPath)) {
