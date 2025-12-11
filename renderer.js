@@ -144,18 +144,57 @@ async function closeTab(tabId) {
 }
 
 async function renameTab(tabId) {
-    const tab = tabs.find(tab => tab.id === tabId);
-    if (!tab || tab.isHelp) return;
+  const tab = tabs.find(tab => tab.id === tabId);
+  if (!tab || tab.isHelp) return;
 
-    const newName = prompt('Enter new tab name:', tab.name);
-    if (newName) {
-        tab.name = newName;
-        await window.electronAPI.setStoreValue('tabs', tabs);
-        const tabEl = document.querySelector(`.tab[data-tab-id="${tabId}"] .tab-name`);
-        if (tabEl) {
-            tabEl.textContent = newName;
-        }
+  const tabEl = document.querySelector(`.tab[data-tab-id="${tabId}"]`);
+  if (!tabEl) return;
+
+  // Prevent multiple inline edits on the same tab
+  if (tabEl.querySelector('input.tab-rename-input')) return;
+
+  const currentNameEl = tabEl.querySelector('.tab-name');
+  if (!currentNameEl) return;
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.value = tab.name;
+  input.className = 'tab-rename-input';
+  input.addEventListener('click', (e) => e.stopPropagation());
+
+  const restoreLabel = async (shouldSave) => {
+    input.removeEventListener('blur', onBlur);
+    input.removeEventListener('keydown', onKeyDown);
+
+    const nextName = input.value.trim();
+    if (shouldSave && nextName && nextName !== tab.name) {
+      tab.name = nextName;
+      await window.electronAPI.setStoreValue('tabs', tabs);
     }
+
+    const newLabel = document.createElement('span');
+    newLabel.className = 'tab-name';
+    newLabel.textContent = tab.name;
+    input.replaceWith(newLabel);
+  };
+
+  const onBlur = () => restoreLabel(true);
+  const onKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      restoreLabel(true);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      restoreLabel(false);
+    }
+  };
+
+  input.addEventListener('blur', onBlur);
+  input.addEventListener('keydown', onKeyDown);
+
+  currentNameEl.replaceWith(input);
+  input.focus();
+  input.select();
 }
 
 async function createHelpTab() {

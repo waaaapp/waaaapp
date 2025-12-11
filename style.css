@@ -35,6 +35,14 @@ body, html {
   flex-grow: 1;
 }
 
+.tab-rename-input {
+  flex: 1;
+  padding: 4px 6px;
+  border: 1px solid #aaa;
+  border-radius: 4px;
+  font-size: inherit;
+}
+
 .close-tab {
   margin-left: 10px;
   padding: 2px 5px;
