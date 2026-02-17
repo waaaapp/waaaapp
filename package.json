@@ -5,7 +5,7 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder --win && electron-builder --mac"
+    "build": "electron-builder --win && electron-builder --mac && electron-builder --linux"
   },
   "keywords": [],
   "author": "",
@@ -45,7 +45,13 @@
       ]
     },
     "linux": {
-      "icon": "icon.png"
+      "icon": "icon.png",
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": ["x64"]
+        }
+      ]
     },
     "files": [
       "**/*",
