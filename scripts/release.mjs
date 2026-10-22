@@ -3,7 +3,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 const version = process.env.VERSION;
 if (!/^2\.0\.\d+$/.test(version)) throw new Error('Invalid release version');
-const required = ['win-x64.exe', 'win-arm64.exe', 'mac-universal.dmg', 'mac-universal.zip', 'linux-x64.AppImage', 'linux-arm64.AppImage'].map(suffix => `waaaapp-${version}-${suffix}`);
+const required = ['win-x64.exe', 'win-arm64.exe', 'mac-universal.dmg', 'mac-universal.zip', 'linux-x86_64.AppImage', 'linux-arm64.AppImage'].map(suffix => `waaaapp-${version}-${suffix}`);
 required.push('latest.yml', 'latest-mac.yml', 'latest-linux.yml', 'latest-linux-arm64.yml');
 for (const name of required) if (!fs.existsSync(path.join('release', name))) throw new Error(`Missing release artifact: ${name}`);
 const checksum = name => crypto.createHash('sha256').update(fs.readFileSync(path.join('release', name))).digest('hex');
@@ -19,7 +19,7 @@ fs.writeFileSync('Casks/waaaapp.rb', `cask "waaaapp" do
   desc "A desktop workspace for multiple WhatsApp accounts"
   homepage "https://github.com/waaaapp/waaaapp"
 
-  depends_on macos: ">= :monterey"
+  depends_on macos: ">= :ventura"
   app "waaaapp.app"
 
   zap trash: "~/Library/Application Support/waaaapp"
