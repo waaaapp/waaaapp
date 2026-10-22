@@ -1,239 +1,86 @@
-const tabsContainer = document.getElementById('tabs-container');
-const webviewContainer = document.getElementById('webview-container');
-const addTabBtn = document.getElementById('add-tab-btn');
-const renameTabBtn = document.getElementById('rename-tab-btn');
-const exportBtn = document.getElementById('export-btn');
-const importBtn = document.getElementById('import-btn');
-const exitBtn = document.getElementById('exit-btn');
-const helpBtn = document.getElementById('help-btn');
-
-let tabs = [];
-let activeTabId = null;
-
-async function addTab() {
-  const newTab = {
-    id: `tab_${Date.now()}`,
-    name: `Tab ${tabs.length + 1}`,
-  };
-
-  tabs.push(newTab);
-  await window.electronAPI.setStoreValue('tabs', tabs);
-
-  createTabElement(newTab);
-  createWebviewElement(newTab);
-  activateTab(newTab.id);
+const $ = id => document.getElementById(id);
+let current, settingsOpen = false, toastTimer;
+function toast(message) { $('toast').textContent = message; $('toast').hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => $('toast').hidden = true, 7000); }
+async function call(action, payload) {
+  const result = await window.waaaapp.invoke(action, payload);
+  if (!result.ok) { toast(result.error); throw new Error(result.error); }
+  return result.value;
 }
-
-async function init() {
-  tabs = await window.electronAPI.getStoreValue('tabs') || [];
-  activeTabId = await window.electronAPI.getStoreValue('activeTabId') || null;
-
-  if (tabs.length === 0) {
-    addTab();
-  } else {
-    renderTabs();
+function on(id, action) { $(id).addEventListener('click', () => Promise.resolve().then(action).catch(error => toast(error.message))); }
+function photo(button, item) {
+  if (item.avatar) { const image = document.createElement('img'); image.src = item.avatar; image.alt = ''; image.className = 'account-photo'; button.append(image); }
+  else button.textContent = item.name.slice(0, 2).toUpperCase();
+}
+function render(state) {
+  current = state;
+  if (settingsOpen !== state.overlay) {
+    settingsOpen = state.overlay; $('settings-panel').hidden = !settingsOpen;
+    if (settingsOpen) { renderManagement(); $('settings-close').focus(); }
+    else $('passphrase').value = '';
+  }
+  const active = state.accounts.find(item => item.id === state.activeId), status = state.statuses[state.activeId] || {};
+  $('account-name').textContent = active?.name || 'Your workspace';
+  $('account-status').textContent = status.error ? 'Connection interrupted. Use Reload to try again.' : status.loading ? 'Connecting to WhatsApp…' : active ? 'WhatsApp Web · separate account session' : 'A little room for every part of you.';
+  $('reload').hidden = !active;
+  $('footer-state').textContent = `${state.accounts.length} account${state.accounts.length === 1 ? '' : 's'} · ${Object.keys(state.statuses).length} opened`;
+  $('update-status').textContent = state.update.ready ? 'Update ready ↗' : `waaaapp ${state.version}`;
+  $('update-detail').textContent = state.update.message;
+  $('install').hidden = !state.update.ready;
+  $('version').textContent = `Version ${state.version}${state.platform === 'darwin' && !state.signedMac ? ' · Unsigned releases require manual installation unless built with Apple signing.' : ''}`;
+  $('accounts').replaceChildren();
+  for (const [index, item] of state.accounts.entries()) {
+    const button = document.createElement('button'); button.className = 'avatar-button'; button.setAttribute('role', 'tab'); button.setAttribute('aria-selected', String(item.id === state.activeId)); button.setAttribute('aria-label', item.name); button.title = `${item.name}${index < 9 ? ` (⌘/Ctrl ${index + 1})` : ''}`;
+    photo(button, item);
+    const unread = state.statuses[item.id]?.unread;
+    if (unread) { const badge = document.createElement('span'); badge.className = 'badge'; badge.textContent = unread > 99 ? '99+' : unread; button.append(badge); button.setAttribute('aria-label', `${item.name}, ${unread} unread`); }
+    button.onclick = () => select(item.id).catch(error => toast(error.message));
+    button.onkeydown = event => { if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) { event.preventDefault(); const next = event.key === 'Home' ? 0 : event.key === 'End' ? state.accounts.length - 1 : (index + (event.key === 'ArrowDown' ? 1 : -1) + state.accounts.length) % state.accounts.length; $('accounts').children[next].focus(); } };
+    $('accounts').append(button);
+  }
+  if (settingsOpen && !document.activeElement.closest('#manage-accounts')) renderManagement();
+}
+function renderManagement() {
+  $('manage-accounts').replaceChildren();
+  for (const item of current.accounts) {
+    const row = document.createElement('div'); row.className = 'account-row';
+    const avatar = document.createElement('button'); avatar.className = 'photo'; avatar.title = `Choose photo for ${item.name}`; avatar.setAttribute('aria-label', avatar.title); photo(avatar, item); avatar.onclick = () => call('photo', item.id).then(renderManagement).catch(() => {});
+    const name = document.createElement('input'); name.value = item.name; name.maxLength = 80; name.setAttribute('aria-label', 'Account name'); name.onchange = () => call('rename', { id: item.id, name: name.value }).catch(() => { name.value = item.name; }); name.onkeydown = event => { if (event.key === 'Enter') name.blur(); };
+    const remove = document.createElement('button'); remove.textContent = '×'; remove.className = 'remove'; remove.title = `Remove ${item.name}`; remove.setAttribute('aria-label', remove.title); remove.onclick = () => call('remove', item.id).then(renderManagement).catch(() => {});
+    row.append(avatar, name, remove); $('manage-accounts').append(row);
   }
 }
-
-function renderTabs() {
-  tabsContainer.innerHTML = '';
-  webviewContainer.innerHTML = '';
-
-  tabs.forEach(tab => {
-    createTabElement(tab);
-    createWebviewElement(tab);
-  });
-
-  if (activeTabId) {
-    activateTab(activeTabId);
-  }
+async function settings(open) {
+  await call('overlay', open); settingsOpen = open; $('settings-panel').hidden = !open;
+  if (open) { renderManagement(); $('settings-close').focus(); } else { $('passphrase').value = ''; $('settings').focus(); }
 }
-
-function createTabElement(tab) {
-  const tabEl = document.createElement('div');
-  tabEl.className = 'tab';
-  tabEl.dataset.tabId = tab.id;
-
-  const tabNameEl = document.createElement('span');
-  tabNameEl.className = 'tab-name';
-  tabNameEl.textContent = tab.name;
-  tabEl.appendChild(tabNameEl);
-
-  const closeBtn = document.createElement('span');
-  closeBtn.className = 'close-tab';
-  closeBtn.innerHTML = '&times;';
-  closeBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    closeTab(tab.id);
-  });
-  tabEl.appendChild(closeBtn);
-
-  if (!tab.isHelp) {
-    tabEl.addEventListener('dblclick', () => {
-      renameTab(tab.id);
-    });
-  }
-
-  tabEl.addEventListener('click', () => {
-    activateTab(tab.id);
-  });
-
-  tabsContainer.appendChild(tabEl);
-}
-
-function createWebviewElement(tab) {
-  const webviewEl = document.createElement('webview');
-  webviewEl.dataset.tabId = tab.id;
-  if (tab.isHelp) {
-    webviewEl.src = 'https://waaaapp.com/apphelp.html';
-  } else {
-    webviewEl.partition = `persist:whatsapp_tab_${tab.id}`;
-    webviewEl.src = 'https://web.whatsapp.com';
-    webviewEl.useragent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36';
-  }
-
-  webviewContainer.appendChild(webviewEl);
-}
-
-async function activateTab(tabId) {
-  activeTabId = tabId;
-  await window.electronAPI.setStoreValue('activeTabId', activeTabId);
-
-  document.querySelectorAll('.tab').forEach(tabEl => {
-    if (tabEl.dataset.tabId === tabId) {
-      tabEl.classList.add('active');
-    } else {
-      tabEl.classList.remove('active');
-    }
-  });
-
-  document.querySelectorAll('webview').forEach(webviewEl => {
-    if (webviewEl.dataset.tabId === tabId) {
-      webviewEl.classList.add('active');
-    } else {
-      webviewEl.classList.remove('active');
-    }
-  });
-}
-
-async function closeTab(tabId) {
-    const tab = tabs.find(tab => tab.id === tabId);
-    if (!tab) return;
-
-    const tabIndex = tabs.findIndex(tab => tab.id === tabId);
-    if (tabIndex === -1) return;
-
-    const tabEl = document.querySelector(`.tab[data-tab-id="${tabId}"]`);
-    const webviewEl = document.querySelector(`webview[data-tab-id="${tabId}"]`);
-    if (tabEl) tabEl.remove();
-    if (webviewEl) webviewEl.remove();
-
-    tabs.splice(tabIndex, 1);
-    await window.electronAPI.setStoreValue('tabs', tabs);
-
-    if (tabs.length > 0) {
-        if (activeTabId === tabId) {
-            const newActiveTabId = tabs[Math.max(0, tabIndex - 1)].id;
-            activateTab(newActiveTabId);
-        }
-    } else {
-        activeTabId = null;
-        await window.electronAPI.setStoreValue('activeTabId', null);
-        addTab();
-    }
-}
-
-async function renameTab(tabId) {
-  const tab = tabs.find(tab => tab.id === tabId);
-  if (!tab || tab.isHelp) return;
-
-  const tabEl = document.querySelector(`.tab[data-tab-id="${tabId}"]`);
-  if (!tabEl) return;
-
-  // Prevent multiple inline edits on the same tab
-  if (tabEl.querySelector('input.tab-rename-input')) return;
-
-  const currentNameEl = tabEl.querySelector('.tab-name');
-  if (!currentNameEl) return;
-
-  const input = document.createElement('input');
-  input.type = 'text';
-  input.value = tab.name;
-  input.className = 'tab-rename-input';
-  input.addEventListener('click', (e) => e.stopPropagation());
-
-  const restoreLabel = async (shouldSave) => {
-    input.removeEventListener('blur', onBlur);
-    input.removeEventListener('keydown', onKeyDown);
-
-    const nextName = input.value.trim();
-    if (shouldSave && nextName && nextName !== tab.name) {
-      tab.name = nextName;
-      await window.electronAPI.setStoreValue('tabs', tabs);
-    }
-
-    const newLabel = document.createElement('span');
-    newLabel.className = 'tab-name';
-    newLabel.textContent = tab.name;
-    input.replaceWith(newLabel);
-  };
-
-  const onBlur = () => restoreLabel(true);
-  const onKeyDown = (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      restoreLabel(true);
-    } else if (e.key === 'Escape') {
-      e.preventDefault();
-      restoreLabel(false);
-    }
-  };
-
-  input.addEventListener('blur', onBlur);
-  input.addEventListener('keydown', onKeyDown);
-
-  currentNameEl.replaceWith(input);
-  input.focus();
-  input.select();
-}
-
-async function createHelpTab() {
-  const existingHelpTab = tabs.find(tab => tab.isHelp);
-  if (existingHelpTab) {
-    activateTab(existingHelpTab.id);
-    return;
-  }
-
-  const newTab = {
-    id: 'help_tab',
-    name: 'Help',
-    isHelp: true,
-  };
-
-  tabs.push(newTab);
-  await window.electronAPI.setStoreValue('tabs', tabs);
-
-  createTabElement(newTab);
-  createWebviewElement(newTab);
-  activateTab(newTab.id);
-}
-
-addTabBtn.addEventListener('click', addTab);
-renameTabBtn.addEventListener('click', () => {
-    if(activeTabId) {
-        renameTab(activeTabId)
-    }
+async function select(id) { if (settingsOpen) await settings(false); await call('activate', id); }
+async function add() { if (settingsOpen) await settings(false); await call('add'); }
+for (const id of ['add', 'welcome-add', 'settings-add']) on(id, add);
+on('settings', () => settings(!settingsOpen)); on('settings-close', () => settings(false)); on('update-status', () => settings(true));
+on('reload', () => call('reload')); on('quit', () => call('quit')); on('check-updates', () => call('updates')); on('install', () => call('install')); on('downloads', () => call('downloads'));
+for (const action of ['export', 'import']) on(action, async () => {
+  const password = $('passphrase').value;
+  if (password.length < 10) return toast('Enter your backup passphrase of at least 10 characters.');
+  $('export').disabled = $('import').disabled = true;
+  try { const result = await call(action, password); if (result?.message) toast(result.message); }
+  finally { $('passphrase').value = ''; $('export').disabled = $('import').disabled = false; }
 });
-exportBtn.addEventListener('click', async () => {
-    const result = await window.electronAPI.exportProfile();
-    alert(result.message);
-});
-importBtn.addEventListener('click', async () => {
-    const result = await window.electronAPI.importProfile();
-    alert(result.message);
-});
-exitBtn.addEventListener('click', () => window.electronAPI.exitApp());
-
-helpBtn.addEventListener('click', createHelpTab);
-
-init();
+document.addEventListener('keydown', event => { if (event.key === 'Escape' && settingsOpen) settings(false).catch(() => {}); });
+async function setupCalls() {
+  const result = await call('permissions');
+  if (!result.capture) return;
+  const results = [];
+  for (const kind of ['audio', 'video']) {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ [kind]: true });
+      stream.getTracks().forEach(track => track.stop());
+      results.push(`${kind === 'audio' ? 'Microphone' : 'Camera'} ready`);
+    } catch (error) { results.push(`${kind === 'audio' ? 'Microphone' : 'Camera'}: ${error.name === 'NotFoundError' ? 'no device found' : 'blocked or unavailable'}`); }
+  }
+  const message = results.join('. ') + '. ' + (result.message || 'If blocked, check your operating system privacy settings.');
+  $('media-status').textContent = message; toast(message);
+}
+on('permissions', setupCalls);
+on('permission-settings', () => call('permission-settings'));
+window.waaaapp.subscribe(render);
+call('state').then(async state => { render(state); if (!state.permissionsPrompted) await setupCalls(); }).catch(error => toast(error.message));

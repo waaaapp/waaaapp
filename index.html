@@ -1,43 +1,13 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>waaaapp</title>
-  <link rel="stylesheet" href="style.css">
-  <link rel="icon" href="icon.svg" type="image/svg+xml">
-</head>
+<!doctype html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'"><title>waaaapp</title><link rel="stylesheet" href="style.css"></head>
 <body>
-  <div id="container">
-    <div id="tabs-container"></div>
-    <div id="main-content">
-      <div id="button-bar">
-        <div id="top-buttons">
-          <button id="add-tab-btn" title="New Tab">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-          </button>
-          <button id="rename-tab-btn" title="Rename Tab">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-          </button>
-          <button id="export-btn" title="Export Profile">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-          </button>
-          <button id="import-btn" title="Import Profile">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-          </button>
-        </div>
-        <div id="bottom-buttons">
-          <hr class="separator">
-          <button id="exit-btn" title="Exit">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-          </button>
-          <button id="help-btn" title="Help">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-          </button>
-        </div>
-      </div>
-      <div id="webview-container"></div>
-    </div>
-  </div>
-  <script src="renderer.js"></script>
-</body>
-</html>
+<header><a class="wordmark" aria-label="waaaapp home">w<span>aaa</span>app<span class="brand-dot">●</span></a><span class="divider"></span><div class="account-heading"><strong id="account-name">Your workspace</strong><span id="account-status">A little room for every part of you.</span></div><button id="reload" class="quiet" title="Reload account (⌘/Ctrl R)">↻ <span>Reload</span></button></header>
+<main id="empty"><div class="welcome-mark">w.</div><p class="eyebrow">ONE WINDOW. YOUR WORLDS.</p><h1>Make room for<br>another conversation.</h1><p>Your personal number. Your business. Your next big idea.<br>Give each account a space of its own.</p><button id="welcome-add" class="primary">＋ Add a WhatsApp account</button><small>Link securely with the QR code from WhatsApp on your phone.</small></main>
+<aside aria-label="Account switcher"><div class="rail-mark" aria-hidden="true">w.</div><div id="accounts" role="tablist" aria-label="WhatsApp accounts" aria-orientation="vertical"></div><button id="add" class="rail-button add" title="Add account" aria-label="Add account">＋</button><div class="rail-bottom"><button id="settings" class="rail-button" title="Workspace settings" aria-label="Workspace settings">⚙</button><button id="quit" class="rail-button" title="Close waaaapp" aria-label="Close waaaapp">⏻</button></div></aside>
+<footer><span><i></i> <span id="footer-state">Your conversations, in their own space.</span></span><button id="update-status">Checking your version</button></footer>
+<section id="settings-panel" hidden aria-labelledby="settings-title"><div class="settings-wrap"><div class="section-heading"><div><p class="eyebrow">MAKE YOURSELF AT HOME</p><h1 id="settings-title">Your workspace.</h1></div><button id="settings-close" class="quiet">Done ✓</button></div>
+<div class="settings-grid"><section class="panel"><span class="section-number">01 / ACCOUNTS</span><h2>A face for every account.</h2><p>Switch using the icons on the right. We use your WhatsApp profile photo when available, or you can choose one here.</p><div id="manage-accounts"></div><button id="settings-add" class="secondary">＋ Add account</button></section>
+<section class="panel"><span class="section-number">02 / TAKE IT WITH YOU</span><h2>New computer. Familiar space.</h2><p>Save account names and photos in an encrypted workspace file. Import it on any supported computer, then link each account with your phone. Messages and login sessions are not included.</p><label for="passphrase">Backup passphrase</label><input id="passphrase" type="password" minlength="10" maxlength="1024" autocomplete="off" placeholder="At least 10 characters"><small>Keep this somewhere safe. It cannot be recovered.</small><div class="button-row"><button id="export" class="primary">Export workspace ↗</button><button id="import" class="secondary">Import workspace ↙</button></div><p class="hint">Import adds accounts and keeps your current workspace intact.</p></section>
+<section class="panel update-panel"><span class="section-number">03 / ALWAYS MOVING FORWARD</span><h2>Small updates. Better days.</h2><p id="update-detail"></p><div class="button-row"><button id="check-updates" class="secondary">Check for updates</button><button id="install" class="primary" hidden>Restart & update</button><button id="downloads" class="quiet">Downloads ↗</button></div><small id="version"></small></section>
+<section class="panel"><span class="section-number">04 / READY WHEN THEY CALL</span><h2>Say hello. Camera on.</h2><p>Set up microphone and camera access for WhatsApp calls. A quick test releases both devices immediately. If access is blocked, allow waaaapp in your operating system privacy settings and restart.</p><div class="button-row"><button id="permissions" class="primary">Set up calls</button><button id="permission-settings" class="secondary">System permissions ↗</button></div><p id="media-status" role="status"></p></section><section class="panel about-panel"><span class="section-number">A LITTLE NOTE</span><h2>Your chats stay in WhatsApp.</h2><p>waaaapp gives your accounts a home on your desktop. It is an independent, open-source app by Chris Ochieng, not affiliated with WhatsApp or Meta.</p><p>Accounts open when you first select them and stay connected while the app is running. Unopened accounts do not receive notifications.</p><p>Switch accounts with ⌘/Ctrl + 1–9. Add one with ⌘/Ctrl + T. Open settings with ⌘/Ctrl + ,.</p></section></div></div></section>
+<div id="toast" role="status" hidden></div><script src="renderer.js"></script></body></html>

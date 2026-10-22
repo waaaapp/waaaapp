@@ -1,43 +1,72 @@
 # waaaapp
 
-[![Build and Release](https://github.com/jangi/whatsaaapp/actions/workflows/release.yml/badge.svg?branch=prod)](https://github.com/jangi/whatsaaapp/actions/workflows/release.yml)
+A desktop workspace for multiple WhatsApp accounts. Made by Chris Ochieng.
 
-A multi-tabbed WhatsApp client for managing multiple accounts.
+## What changed in version 2
 
-## Why was this made?
+- A right-hand account rail with automatic self-profile photos where WhatsApp exposes them, custom photos, initials as a fallback, and unread badges.
+- Separate persistent account sessions. Existing version 1 partition identifiers are retained.
+- Electron WebContentsView replaces renderer-managed webviews. Remote pages are sandboxed, have no Node access, and cannot invoke workspace commands.
+- Accounts load on first selection and stay connected until removed or the app exits. Unopened accounts do not receive notifications.
+- Confirmation before closing the app or deleting a local account session.
+- First-run camera/microphone setup, immediate device release after testing, and permission setup in settings. macOS builds include usage descriptions and camera/audio entitlements.
+- Encrypted, portable workspace backups with authenticated AES-256-GCM encryption and scrypt key derivation. Names and photos transfer; sessions and messages do not. Restoring adds new accounts and requires QR linking. Version 1 ZIP backups are unsupported.
+- Automatic updates for Windows NSIS installs and Linux AppImages. macOS checks for releases, with manual installation until Apple signing/notarization is configured.
 
-This application was born out of the need to manage multiple WhatsApp accounts for different businesses and personal contacts across various countries. As a frequent traveler and business owner, I found it challenging to keep up with conversations on different devices and accounts. `waaaapp` is my solution to this problem.
+## Development
 
-## What it does
+Node 24 or later:
 
-`waaaapp` allows you to run multiple WhatsApp Web instances in a single, tabbed window. Each tab is a separate session, allowing you to stay logged in to multiple accounts simultaneously.
+```sh
+npm ci
+npm test
+npm start
+```
 
-## Features
+For an isolated test profile:
 
-- Multiple tabs, each with its own persistent WhatsApp Web session (independent profiles).
-- Inline tab rename (double-click a tab or use the rename button).
-- Profile export/import to `.waaaapp` archives (config + all tab sessions).
-- Help tab built in for quick reference.
-- Platform-ready icons: ICO (Windows), ICNS (macOS), PNG (Linux).
-- Packaged builds: Windows portable, macOS DMG, Linux AppImage (via GitHub Actions).
+```sh
+WAAAAPP_DATA_DIR=/absolute/path/to/qa-profile npm start
+```
 
-## Disclaimer
+Keep generated local packages outside the source checkout:
 
-This project is an independent creation and is not affiliated with, endorsed by, or in any way officially connected with WhatsApp or its parent company, Meta. The use of the name "WhatsApp" is for identification and descriptive purposes only. This project is a wrapper for the official WhatsApp Web interface and does not modify it in any way.
+```sh
+npm run build:mac -- --arm64 --config.directories.output=/Users/jangita/code/codex_workings/waaaapp/build
+```
 
-## Ideas for Expansion
+## Releases
 
-We're always looking for ways to improve `waaaapp` and expand its capabilities. Here are some ideas for future development:
+Every push to `prod` builds Windows x64/ARM64 installers, a universal macOS DMG and updater ZIP, and Linux x64/ARM64 AppImages. Tests run first. All platform builds must succeed before the workflow creates a draft release, uploads every installer and update manifest, and publishes it. Versions use `2.0.<GitHub run number>` so clients see increasing versions. Pull requests build but do not publish.
 
-*   **Profile Backup and Restore**: Implement functionality to back up and restore user profiles, either locally to disk, to various online storage services, or ideally, to our dedicated cloud service.
-*   **Enhanced Customization**: More options for themes, notification settings, and tab management.
-*   **Plugin System**: Allow users to extend `waaaapp`'s functionality with custom plugins.
-*   **Cross-Platform Sync**: Seamless synchronization of tabs and settings across different devices.
+The release script checks required assets and emits SHA256SUMS.txt. It also writes a checksum-pinned Homebrew cask to `Casks/waaaapp.rb` and commits it to `prod`. That bot commit uses GITHUB_TOKEN and does not trigger another workflow run.
 
-## Contributing
+```sh
+brew tap waaaapp/desktop https://github.com/waaaapp/waaaapp
+brew install --cask waaaapp
+brew upgrade --cask waaaapp
+```
 
-Contributions are welcome! If you have an idea for a new feature or have found a bug, please feel free to open an issue or submit a pull request.
+This is the project's own tap, not a claim of acceptance into Homebrew's official cask repository. The cask is generated only after a successful release.
+
+Existing version 1 installations have no updater and must install version 2 once. They cannot be upgraded remotely by publishing a release. Updates download in the background and install on normal quit or an explicit restart. Closing confirms first.
+
+### Apple signing
+
+Configure repository secrets `MAC_CERTIFICATE` (base64 P12 or supported certificate URL), `MAC_CERTIFICATE_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, and `APPLE_TEAM_ID`. The build then sets `signedMac=true` and uses electron-builder signing/notarization. Without these, releases are unsigned and macOS automatic installation is disabled. Signing identity must remain compatible between releases. Verify a real signed N-to-N+1 upgrade before advertising signed macOS auto-update support.
+
+Windows packages are currently unsigned unless a Windows signing integration is configured; SmartScreen can warn. Do not bypass OS protections automatically.
+
+### Platform and calling checks
+
+The shared Chromium engine provides consistent behavior across platforms and avoids OS-webview variation. Electron is heavier than a native shell; accounts are loaded lazily to avoid starting every session at launch. Keep Electron updated for security fixes.
+
+WhatsApp controls calling availability and its DOM. Photos use only explicit self-profile selectors; contact avatars are never used as a fallback. Test with a linked account after WhatsApp changes its UI. Calls require OS permissions, a working device and network, and WhatsApp Web calling availability. Denied macOS permissions must be changed in System Settings and may require restarting. Linux permissions depend on the desktop and device setup.
+
+## Website
+
+The `waaaapp/website` repository serves a dependency-free static site on GitHub Pages. Configure Cloudflare Pages to build its `prod` branch with `npm run build` and publish `dist`. Downloads query the latest published app release, so new binaries do not require a website commit.
 
 ## License
 
-This project is licensed under the MIT License with an attribution clause. See the [LICENSE](LICENSE) file for details.
+See LICENSE, including attribution to Chris Ochieng. waaaapp is independent of WhatsApp and Meta.

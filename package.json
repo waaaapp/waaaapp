@@ -1,24 +1,31 @@
 {
   "name": "waaaapp",
-  "version": "1.0.0",
-  "description": "A multi-tabbed WhatsApp client",
+  "version": "2.0.0",
+  "description": "A little room for every WhatsApp account.",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder --win && electron-builder --mac && electron-builder --linux"
+    "test": "node --test test/*.test.js",
+    "build": "electron-builder --publish never",
+    "build:mac": "electron-builder --mac --publish never",
+    "build:win": "electron-builder --win --publish never",
+    "build:linux": "electron-builder --linux --publish never"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": {
+    "name": "Chris Ochieng",
+    "email": "mail@chrisochieng.com"
+  },
+  "license": "SEE LICENSE IN LICENSE",
   "devDependencies": {
-    "electron": "^39.0.0",
-    "electron-builder": "^24.13.3",
+    "electron": "45.0.0",
+    "electron-builder": "26.15.3",
     "png2icons": "^2.0.1",
-    "sharp": "^0.34.5"
+    "sharp": "0.35.5"
   },
   "dependencies": {
-    "adm-zip": "^0.5.16",
-    "electron-store": "^11.0.2"
+    "electron-store": "11.0.2",
+    "electron-updater": "6.8.9"
   },
   "build": {
     "appId": "com.waaaapp.app",
@@ -29,37 +36,85 @@
     "win": {
       "target": [
         {
-          "target": "portable",
-          "arch": ["x64"]
+          "target": "nsis",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
         }
       ],
       "icon": "icon.ico"
     },
     "mac": {
       "icon": "icon.icns",
+      "category": "public.app-category.social-networking",
+      "hardenedRuntime": true,
       "target": [
         {
           "target": "dmg",
-          "arch": ["universal"]
+          "arch": [
+            "universal"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "universal"
+          ]
         }
-      ]
+      ],
+      "extendInfo": {
+        "NSMicrophoneUsageDescription": "waaaapp uses your microphone for WhatsApp voice and video calls.",
+        "NSCameraUsageDescription": "waaaapp uses your camera for WhatsApp video calls."
+      },
+      "entitlements": "entitlements.mac.plist",
+      "entitlementsInherit": "entitlements.mac.plist"
     },
     "linux": {
       "icon": "icon.png",
+      "category": "Network",
       "target": [
         {
           "target": "AppImage",
-          "arch": ["x64"]
+          "arch": [
+            "x64",
+            "arm64"
+          ]
         }
-      ]
+      ],
+      "maintainer": "Chris Ochieng <mail@chrisochieng.com>"
     },
     "files": [
-      "**/*",
-      "!node_modules/*/{CHANGELOG.md,README.md,README,.github,CONTRIBUTING.md,docs,test,tests,powered-test,example,examples,*.d.ts}",
-      "!node_modules/.bin",
-      "!**/*.{iml,o,hprof,orig,pyc,pyo,rbc,swp,csproj,fsproj,vbproj,resharper,idea,sln,suo,xproj}",
-      "!**/._*",
-      "!**/{.DS_Store,.git,.hg,.svn,CVS,RCS,SCCS,.arch-ids,.bzr,.fslckout,.gitattributes,.gitignore,.hgignore,.hgsigs,.npmignore,.cvsignore,.gitignore,.gitkeep,.project,.settings,.vs,npm-debug.log,yarn.lock,.editorconfig,.jshintrc,.prettierrc,.prettierignore,.travis.yml,appveyor.yml,.gitlab-ci.yml,package-lock.json}"
-    ]
-  }
+      "main.js",
+      "preload.js",
+      "account-preload.js",
+      "workspace.js",
+      "renderer.js",
+      "index.html",
+      "style.css",
+      "icon.*",
+      "LICENSE"
+    ],
+    "artifactName": "waaaapp-${version}-${os}-${arch}.${ext}",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "waaaapp",
+        "repo": "waaaapp",
+        "releaseType": "draft"
+      }
+    ],
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "deleteAppDataOnUninstall": false
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/waaaapp/waaaapp.git"
+  },
+  "homepage": "https://waaaapp.github.io/website/",
+  "signedMac": false
 }

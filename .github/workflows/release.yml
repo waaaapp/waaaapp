@@ -1,84 +1,122 @@
-name: Build and Release
-
+name: Build and release
 on:
   push:
-    branches:
-      - prod
-
-defaults:
-  run:
-    shell: bash
-
+    branches: [prod]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 jobs:
   prepare:
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.pkg.outputs.version }}
+      version: ${{ steps.version.outputs.value }}
     steps:
       - uses: actions/checkout@v4
-      - id: pkg
-        run: echo "version=$(node -p \"require('./package.json').version\")" >> $GITHUB_OUTPUT
-
-  create_release:
-    needs: prepare
-    runs-on: ubuntu-latest
-    outputs:
-      upload_url: ${{ steps.release.outputs.upload_url }}
-      release_tag: ${{ steps.release.outputs.tag_name }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Create GitHub release
-        id: release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-node@v4
         with:
-          tag_name: v${{ needs.prepare.outputs.version }}-${{ github.run_number }}
-          release_name: waaaapp v${{ needs.prepare.outputs.version }} (build ${{ github.run_number }})
-          draft: false
-          prerelease: false
-
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - id: version
+        run: echo "value=2.0.${{ github.run_number }}" >> "$GITHUB_OUTPUT"
   build:
-    needs: [prepare, create_release]
+    needs: prepare
     strategy:
       fail-fast: false
       matrix:
         include:
           - os: windows-latest
-            target: "win portable"
-            pattern: "release/*Portable.exe"
+            target: win
           - os: macos-latest
-            target: "mac dmg"
-            pattern: "release/*.dmg"
+            target: mac
           - os: ubuntu-latest
-            target: "linux AppImage"
-            pattern: "release/*.AppImage"
+            target: linux
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
-      - name: Install dependencies
-        run: npm ci
-      - name: Build ${{ matrix.target }}
+      - run: npm ci
+      - name: Set release version
+        run: npm version '${{ needs.prepare.outputs.version }}' --no-git-tag-version
+      - name: Configure optional Apple signing
+        if: matrix.target == 'mac'
+        env:
+          CSC_LINK: ${{ secrets.MAC_CERTIFICATE }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          if [[ -n "$CSC_LINK" && -n "$APPLE_ID" && -n "$APPLE_APP_SPECIFIC_PASSWORD" && -n "$APPLE_TEAM_ID" ]]; then
+            npm pkg set signedMac=true --json
+          else
+            echo 'Apple signing is not configured. Publishing a manual-install macOS build.'
+          fi
+      - name: Build packages and update manifests
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx electron-builder --${{ matrix.target }}
-      - name: Find artifact
-        id: find_artifact
-        run: |
-          set -e
-          file=$(ls ${{ matrix.pattern }} | head -n 1)
-          echo "file=$file" >> $GITHUB_OUTPUT
-          echo "name=$(basename "$file")" >> $GITHUB_OUTPUT
-      - name: Upload to release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_LINK: ${{ matrix.target == 'mac' && secrets.MAC_CERTIFICATE || '' }}
+          CSC_KEY_PASSWORD: ${{ secrets.MAC_CERTIFICATE_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: npx electron-builder --${{ matrix.target }} --publish never
+      - uses: actions/upload-artifact@v4
         with:
-          upload_url: ${{ needs.create_release.outputs.upload_url }}
-          asset_path: ${{ steps.find_artifact.outputs.file }}
-          asset_name: ${{ steps.find_artifact.outputs.name }}
-          asset_content_type: application/octet-stream
+          name: packages-${{ matrix.target }}
+          if-no-files-found: error
+          path: |
+            release/*.exe
+            release/*.dmg
+            release/*.zip
+            release/*.AppImage
+            release/*.blockmap
+            release/latest*.yml
+  publish:
+    if: github.ref == 'refs/heads/prod' && github.event_name != 'pull_request'
+    needs: [prepare, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: prod
+      - uses: actions/download-artifact@v4
+        with:
+          path: release
+          merge-multiple: true
+      - name: Validate all artifacts, create checksums and Homebrew cask
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: node scripts/release.mjs
+      - name: Publish complete release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          if ! gh release view "v$VERSION" >/dev/null 2>&1; then
+            gh release create "v$VERSION" --draft --target '${{ github.sha }}' --title "waaaapp $VERSION" --notes-file RELEASE_NOTES.md
+          fi
+          if [[ "$(gh release view "v$VERSION" --json isDraft --jq .isDraft)" == "true" ]]; then
+            gh release upload "v$VERSION" release/* --clobber
+            gh release edit "v$VERSION" --draft=false --latest
+          fi
+      - name: Update Homebrew tap
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add Casks/waaaapp.rb
+          git commit -m 'Update Homebrew cask to ${{ needs.prepare.outputs.version }}'
+          git pull --rebase origin prod
+          git push origin HEAD:prod
