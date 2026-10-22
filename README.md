@@ -65,7 +65,7 @@ WhatsApp controls calling availability and its DOM. Photos use only explicit sel
 
 ## Website
 
-The `waaaapp/website` repository serves a dependency-free static site on GitHub Pages. Configure Cloudflare Pages to build its `prod` branch with `npm run build` and publish `dist`. Downloads query the latest published app release, so new binaries do not require a website commit.
+The `waaaapp/website` repository contains a dependency-free static site for Cloudflare Pages. It remains private; GitHub Actions validates the build. Configure Cloudflare Pages to build its `prod` branch with `npm run build` and publish `dist`. Downloads query the latest published app release, so new binaries do not require a website commit.
 
 ## License
 

@@ -17,7 +17,7 @@ fs.writeFileSync('Casks/waaaapp.rb', `cask "waaaapp" do
   url "https://github.com/waaaapp/waaaapp/releases/download/v#{version}/waaaapp-#{version}-mac-universal.dmg"
   name "waaaapp"
   desc "A desktop workspace for multiple WhatsApp accounts"
-  homepage "https://waaaapp.github.io/website/"
+  homepage "https://github.com/waaaapp/waaaapp"
 
   depends_on macos: ">= :monterey"
   app "waaaapp.app"
