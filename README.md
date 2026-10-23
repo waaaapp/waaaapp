@@ -43,6 +43,7 @@ The release script checks required assets and emits SHA256SUMS.txt. It also writ
 
 ```sh
 brew tap waaaapp/desktop https://github.com/waaaapp/waaaapp
+brew trust waaaapp/desktop
 brew install --cask waaaapp
 brew upgrade --cask waaaapp
 ```

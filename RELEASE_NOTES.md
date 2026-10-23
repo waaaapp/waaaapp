@@ -16,6 +16,7 @@ This release may be unsigned until Apple Developer credentials are configured. m
 ### Homebrew
 ```sh
 brew tap waaaapp/desktop https://github.com/waaaapp/waaaapp
+brew trust waaaapp/desktop
 brew install --cask waaaapp
 ```
 
