@@ -1,7 +1,7 @@
 {
   "name": "waaaapp",
   "version": "2.0.0",
-  "description": "A little room for every WhatsApp account.",
+  "description": "Multiple WhatsApp accounts in one desktop app.",
   "main": "main.js",
   "scripts": {
     "start": "electron .",

@@ -20,7 +20,7 @@ function render(state) {
   }
   const active = state.accounts.find(item => item.id === state.activeId), status = state.statuses[state.activeId] || {};
   $('account-name').textContent = active?.name || 'Your workspace';
-  $('account-status').textContent = status.error ? 'Connection interrupted. Use Reload to try again.' : status.loading ? 'Connecting to WhatsApp…' : active ? 'WhatsApp Web · separate account session' : 'A little room for every part of you.';
+  $('account-status').textContent = status.error ? 'Connection interrupted. Use Reload to try again.' : status.loading ? 'Connecting to WhatsApp…' : active ? 'WhatsApp Web · separate account session' : 'Add an account to get started.';
   $('reload').hidden = !active;
   $('footer-state').textContent = `${state.accounts.length} account${state.accounts.length === 1 ? '' : 's'} · ${Object.keys(state.statuses).length} opened`;
   $('update-status').textContent = state.update.ready ? 'Update ready ↗' : `waaaapp ${state.version}`;
