@@ -58,7 +58,7 @@ function activate(id) {
       if (result.response === 1) store.set('mediaAllowed', true);
       callback(result.response === 1);
     });
-    contents.on('did-start-loading', () => { statuses.set(id, { ...statuses.get(id), loading: true, error: '' }); emit(); });
+    contents.on('did-start-loading', () => { statuses.set(id, { ...statuses.get(id), loading: true, error: '', connection: 'checking' }); emit(); });
     contents.on('did-stop-loading', () => { statuses.set(id, { ...statuses.get(id), loading: false }); emit(); });
     contents.on('page-title-updated', (_e, title) => { const match = title.match(/^\((\d+)\)/); statuses.set(id, { ...statuses.get(id), unread: match ? Number(match[1]) : 0 }); emit(); });
     contents.on('did-fail-load', (_e, code, description, _url, isMainFrame) => { if (isMainFrame && code !== -3) { statuses.set(id, { ...statuses.get(id), loading: false, error: description }); emit(); } });
@@ -202,6 +202,13 @@ async function start() {
     if (!win || event.sender !== win.webContents || event.senderFrame !== win.webContents.mainFrame || event.senderFrame.url !== entryURL) throw new Error('Untrusted request.');
     try { return { ok: true, value: await handle(action, payload) }; }
     catch (error) { return { ok: false, error: error.message }; }
+  });
+  ipcMain.on('account-status', (event, connection) => {
+    const match = [...views].find(([, view]) => view.webContents === event.sender);
+    if (!match || event.senderFrame !== event.sender.mainFrame || !isWhatsApp(event.senderFrame.url)) return;
+    if (!['checking', 'offline', 'reconnecting', 'login', 'connected'].includes(connection)) return;
+    statuses.set(match[0], { ...statuses.get(match[0]), connection });
+    emit();
   });
   ipcMain.on('account-photo', (event, avatar) => {
     const match = [...views].find(([, view]) => view.webContents === event.sender);

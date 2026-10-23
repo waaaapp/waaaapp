@@ -20,7 +20,7 @@ function render(state) {
   }
   const active = state.accounts.find(item => item.id === state.activeId), status = state.statuses[state.activeId] || {};
   $('account-name').textContent = active?.name || 'Your workspace';
-  $('account-status').textContent = status.error ? 'Connection interrupted. Use Reload to try again.' : status.loading ? 'Connecting to WhatsApp…' : active ? 'WhatsApp Web · separate account session' : 'Add an account to get started.';
+  $('account-status').textContent = !active ? 'Add an account to get started.' : !navigator.onLine || status.connection === 'offline' ? 'Offline' : status.error ? 'Connection interrupted. Reload to reconnect.' : status.loading ? 'Connecting…' : ({ connected: 'Connected', reconnecting: 'Reconnecting…', login: 'Waiting for login', checking: 'Checking connection…' }[status.connection] || 'Checking connection…');
   $('reload').hidden = !active;
   $('footer-state').textContent = `${state.accounts.length} account${state.accounts.length === 1 ? '' : 's'} · ${Object.keys(state.statuses).length} opened`;
   $('update-status').textContent = state.update.ready ? 'Update ready ↗' : `waaaapp ${state.version}`;
@@ -82,5 +82,6 @@ async function setupCalls() {
 }
 on('permissions', setupCalls);
 on('permission-settings', () => call('permission-settings'));
+for (const event of ['online', 'offline']) window.addEventListener(event, () => { if (current) render(current); });
 window.waaaapp.subscribe(render);
 call('state').then(async state => { render(state); if (!state.permissionsPrompted) await setupCalls(); }).catch(error => toast(error.message));
