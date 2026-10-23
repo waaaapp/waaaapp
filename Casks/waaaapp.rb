@@ -1,6 +1,6 @@
 cask "waaaapp" do
-  version "2.0.8"
-  sha256 "7406739a3d7da4a9f1245b497cef04595c11da3793e2f936b124c71401534f3b"
+  version "2.0.9"
+  sha256 "59d7d468e8f8a56e46cebeaa9526539ba5cfa1bada65fc0b5d8ca75acbc74971"
 
   url "https://github.com/waaaapp/waaaapp/releases/download/v#{version}/waaaapp-#{version}-mac-universal.dmg"
   name "waaaapp"
