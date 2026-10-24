@@ -7,7 +7,7 @@ cask "waaaapp" do
   desc "A desktop workspace for multiple WhatsApp accounts"
   homepage "https://github.com/waaaapp/waaaapp"
 
-  depends_on macos: ">= :ventura"
+  depends_on macos: :ventura
   app "waaaapp.app"
 
   zap trash: "~/Library/Application Support/waaaapp"
