@@ -15,3 +15,9 @@ release/
 
 # Logs
 *.log
+
+# Apple signing credentials
+*.p8
+*.p12
+*.key
+*.provisionprofile

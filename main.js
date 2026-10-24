@@ -2,20 +2,20 @@ const { app, BrowserWindow, WebContentsView, ipcMain, dialog, shell, nativeImage
 const path = require('node:path');
 const fs = require('node:fs/promises');
 const { pathToFileURL } = require('node:url');
-const { autoUpdater } = require('electron-updater');
+const autoUpdater = process.mas ? null : require('electron-updater').autoUpdater;
 const { account, validateWorkspace, encryptWorkspace, decryptWorkspace, isWhatsApp, externalURL, MAX_ACCOUNTS } = require('./workspace');
 if (!app.isPackaged && process.env.WAAAAPP_DATA_DIR) app.setPath('userData', process.env.WAAAAPP_DATA_DIR);
 let store, win, workspace, closing = false, confirming = false, overlay = false, busy = false;
-let update = { message: 'Updates are checked automatically.', ready: false };
+let update = { message: process.mas ? 'Updates are managed by the Mac App Store.' : 'Updates are checked automatically.', ready: false };
 const views = new Map(), statuses = new Map(), callWindows = new Map();
 const entryURL = pathToFileURL(path.join(__dirname, 'index.html')).href;
 const releasesURL = 'https://github.com/waaaapp/waaaapp/releases/latest';
-if (!app.requestSingleInstanceLock()) app.quit();
+if (!process.mas && !app.requestSingleInstanceLock()) app.quit();
 else {
   app.on('second-instance', () => { if (win) { if (win.isMinimized()) win.restore(); win.show(); win.focus(); } });
   app.whenReady().then(start).catch(error => { dialog.showErrorBox('Unable to start waaaapp', error.message); app.quit(); });
 }
-function state() { return { ...workspace, overlay, statuses: Object.fromEntries(statuses), update, version: app.getVersion(), platform: process.platform, permissionsPrompted: store.get('permissionsPrompted', false), signedMac: require('./package.json').signedMac }; }
+function state() { return { ...workspace, overlay, statuses: Object.fromEntries(statuses), update, version: app.getVersion(), platform: process.platform, permissionsPrompted: store.get('permissionsPrompted', false), signedMac: Boolean(process.mas || require('./package.json').signedMac) }; }
 function emit() { if (win && !win.isDestroyed()) win.webContents.send('state', state()); }
 function save() { store.set('workspace', workspace); emit(); }
 function layout() {
@@ -174,6 +174,7 @@ async function handle(action, payload) {
 }
 let checking = false;
 async function checkUpdates() {
+  if (process.mas) { update.message = 'Updates are managed by the Mac App Store.'; emit(); return; }
   if (!app.isPackaged) { update.message = 'Automatic updates are available in installed release builds.'; emit(); return; }
   if (checking) return;
   checking = true;
@@ -228,14 +229,16 @@ async function start() {
     { label: 'Edit', submenu: [{ role: 'undo' }, { role: 'redo' }, { type: 'separator' }, { role: 'cut' }, { role: 'copy' }, { role: 'paste' }, { role: 'selectAll' }] },
     { label: 'View', submenu: [{ role: 'togglefullscreen' }, { label: 'Reload account', accelerator: 'CmdOrCtrl+R', click: () => views.get(workspace.activeId)?.webContents.reload() }] }
   ]));
-  autoUpdater.autoDownload = true; autoUpdater.autoInstallOnAppQuit = true;
-  autoUpdater.on('checking-for-update', () => { update.message = 'Checking for updates…'; emit(); });
-  autoUpdater.on('update-not-available', () => { update.message = 'You have the latest version.'; emit(); });
-  autoUpdater.on('update-available', () => { update.message = 'Downloading an update in the background…'; emit(); });
-  autoUpdater.on('update-downloaded', () => { update = { message: 'Update ready. Restart when you are ready.', ready: true }; emit(); });
-  autoUpdater.on('error', error => { update.message = `Update unavailable: ${error.message}`; emit(); });
   createWindow();
-  setTimeout(checkUpdates, 15000).unref(); setInterval(checkUpdates, 4 * 60 * 60 * 1000).unref();
+  if (!process.mas) {
+    autoUpdater.autoDownload = true; autoUpdater.autoInstallOnAppQuit = true;
+    autoUpdater.on('checking-for-update', () => { update.message = 'Checking for updates…'; emit(); });
+    autoUpdater.on('update-not-available', () => { update.message = 'You have the latest version.'; emit(); });
+    autoUpdater.on('update-available', () => { update.message = 'Downloading an update in the background…'; emit(); });
+    autoUpdater.on('update-downloaded', () => { update = { message: 'Update ready. Restart when you are ready.', ready: true }; emit(); });
+    autoUpdater.on('error', error => { update.message = `Update unavailable: ${error.message}`; emit(); });
+    setTimeout(checkUpdates, 15000).unref(); setInterval(checkUpdates, 4 * 60 * 60 * 1000).unref();
+  }
   app.on('before-quit', event => { if (!closing && win) { event.preventDefault(); win.close(); } else if (win) destroyViews(); });
   app.on('window-all-closed', () => app.quit());
 }

@@ -11,7 +11,7 @@ A desktop workspace for multiple WhatsApp accounts. Made by Chris Ochieng.
 - Confirmation before closing the app or deleting a local account session.
 - First-run camera/microphone setup, immediate device release after testing, and permission setup in settings. macOS builds include usage descriptions and camera/audio entitlements.
 - Encrypted, portable workspace backups with authenticated AES-256-GCM encryption and scrypt key derivation. Names and photos transfer; sessions and messages do not. Restoring adds new accounts and requires QR linking. Version 1 ZIP backups are unsupported.
-- Automatic updates for Windows NSIS installs and Linux AppImages. macOS checks for releases, with manual installation until Apple signing/notarization is configured.
+- Automatic updates for Windows NSIS installs and Linux AppImages. Signed macOS releases also use the updater. Older unsigned builds need one manual upgrade.
 
 ## Development
 
@@ -54,7 +54,9 @@ Existing version 1 installations have no updater and must install version 2 once
 
 ### Apple signing
 
-Configure repository secrets `MAC_CERTIFICATE` (base64 P12 or supported certificate URL), `MAC_CERTIFICATE_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, and `APPLE_TEAM_ID`. The build then sets `signedMac=true` and uses electron-builder signing/notarization. Without these, releases are unsigned and macOS automatic installation is disabled. Signing identity must remain compatible between releases. Verify a real signed N-to-N+1 upgrade before advertising signed macOS auto-update support.
+Production releases require `MAC_CERTIFICATE` (base64 P12), `MAC_CERTIFICATE_PASSWORD`, `APPLE_API_KEY_CONTENT` (the P8 file), `APPLE_API_KEY_ID`, and `APPLE_API_ISSUER`. The workflow imports the certificate into an isolated temporary keychain, signs and notarizes the app, and checks codesign, Gatekeeper and the stapled ticket before publishing. Missing credentials or failed checks stop the release. Pull requests build without signing secrets. Signing identity must remain compatible between releases. A real signed N-to-N+1 upgrade still needs verification.
+
+Mac App Store packages use `npm run build:mas` with a separate App Store distribution certificate, installer certificate and provisioning profile. Supply the profile using `-c.mas.provisioningProfile=/absolute/path/waaaapp.provisionprofile` and keep signing files outside the repository. This build uses App Sandbox and App Store updates instead of the desktop updater.
 
 Windows packages are currently unsigned unless a Windows signing integration is configured; SmartScreen can warn. Do not bypass OS protections automatically.
 
