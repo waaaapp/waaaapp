@@ -32,8 +32,13 @@ function activate(id) {
   if (!workspace.accounts.some(item => item.id === id)) throw new Error('Unknown account.');
   overlay = false;
   workspace.activeId = id;
+  ensureAccount(id);
+  layout(); save();
+}
+function ensureAccount(id) {
   if (!views.has(id)) {
-    const view = new WebContentsView({ webPreferences: { partition: `persist:whatsapp_tab_${id}`, preload: path.join(__dirname, 'account-preload.js'), sandbox: true, nodeIntegration: false, contextIsolation: true } });
+    const view = new WebContentsView({ webPreferences: { partition: `persist:whatsapp_tab_${id}`, backgroundThrottling: false, preload: path.join(__dirname, 'account-preload.js'), sandbox: true, nodeIntegration: false, contextIsolation: true } });
+    view.setVisible(false);
     views.set(id, view); win.contentView.addChildView(view);
     const contents = view.webContents;
     callWindows.set(id, new Set());
@@ -65,7 +70,11 @@ function activate(id) {
     contents.on('render-process-gone', () => { statuses.set(id, { error: 'This account stopped responding. Reload to reconnect.' }); emit(); });
     contents.loadURL('https://web.whatsapp.com').catch(error => { statuses.set(id, { error: error.message }); emit(); });
   }
-  layout(); save();
+}
+function loadAccounts() {
+  // Keep every linked account connected, even if it is never selected this run.
+  for (const item of workspace.accounts) ensureAccount(item.id);
+  layout();
 }
 async function confirmClose(event) {
   if (closing) return;
@@ -85,7 +94,7 @@ function createWindow() {
   win.on('resize', layout);
   win.on('close', confirmClose);
   win.on('closed', () => { win = null; });
-  win.webContents.on('did-finish-load', () => { if (workspace.activeId) activate(workspace.activeId); emit(); });
+  win.webContents.on('did-finish-load', () => { loadAccounts(); emit(); });
   win.loadFile(path.join(__dirname, 'index.html'));
 }
 async function backup(action, password) {
@@ -108,6 +117,7 @@ async function backup(action, password) {
     if (response !== 1) return { cancelled: true };
     const accounts = imported.accounts.map(item => ({ ...item, id: account().id }));
     workspace.accounts.push(...accounts);
+    loadAccounts();
     if (accounts.length) activate(accounts[0].id); else save();
     return { message: 'Workspace imported. Link the restored accounts using WhatsApp on your phone.' };
   } finally { busy = false; }
