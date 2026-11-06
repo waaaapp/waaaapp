@@ -77,7 +77,7 @@ async function confirmClose(event) {
   if (response === 1) { closing = true; app.quit(); }
 }
 function createWindow() {
-  win = new BrowserWindow({ width: 1320, height: 860, minWidth: 800, minHeight: 580, backgroundColor: '#f5f6f2', autoHideMenuBar: true, icon: path.join(__dirname, 'icon.png'), webPreferences: { preload: path.join(__dirname, 'preload.js'), sandbox: true, contextIsolation: true, nodeIntegration: false } });
+  win = new BrowserWindow({ width: 1320, height: 860, minWidth: 800, minHeight: 580, backgroundColor: '#faf9f6', autoHideMenuBar: true, icon: path.join(__dirname, 'icon.png'), webPreferences: { preload: path.join(__dirname, 'preload.js'), sandbox: true, contextIsolation: true, nodeIntegration: false } });
   win.webContents.session.setPermissionCheckHandler((wc, permission) => wc === win.webContents && permission === 'media' && store.get('mediaAllowed', false));
   win.webContents.session.setPermissionRequestHandler((wc, permission, callback) => callback(wc === win.webContents && permission === 'media' && store.get('mediaAllowed', false)));
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
